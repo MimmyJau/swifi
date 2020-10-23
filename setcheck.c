@@ -11,7 +11,7 @@ int endcheck(void);
 // or turn off wifi (run script)
 int main(int argc, char *argv[]) {
         if (argc == 1) {
-                // printf("Include argument 'wifion' or 'wifioff'\n");
+                printf("Include argument 'wifion' or 'wifioff'\n");
                 return 1;
         }
 
