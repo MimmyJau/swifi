@@ -33,8 +33,8 @@ int main(int argc, char *argv[]) {
 
 // Launch checkon script
 int startcheck(void) {
-	char *checkon_path = "/Users/mimmyjau/Projects/wifi-scheduler/checkon";
-	char *checkon_arg0 = "checkon";
+	char *checkon_path = "/Users/mimmyjau/Projects/wifi-scheduler/checkon.sh";
+	char *checkon_arg0 = "checkon.sh";
 
 	// Fork creates a child process that is identical except it returns
 	// 0 for the child and the pid of the child for the parent process
@@ -57,7 +57,6 @@ int startcheck(void) {
 int endcheck(void) {	
 	// char *killcommand = "kill $(pgrep -f checkon)";
 	// pgrep -f finds name of script and kill will end it
-	int sysret = system("kill $(pgrep -f checkon)");
-	printf("sysret: %d\n", sysret);
+	system("kill $(pgrep -f checkon.sh)");
 	return 0;
 }
