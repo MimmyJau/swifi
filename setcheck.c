@@ -21,10 +21,12 @@ int main(int argc, char *argv[]) {
 		// Run program that sends signal to checkon and shuts it down
 		if (endcheck())
 			return 1;
-		system("networksetup -setairportpower en0 on");
+		// Inclue full path b/c cron sets a different environment 
+		// than shell, meaning PATH variable is different
+		system("/usr/sbin/networksetup -setairportpower en0 on");
         } else if (!strcmp(argv[1], "wifioff")) {
                 printf("Turning off wifi\n");
-		system("networksetup -setairportpower en0 off");
+		system("/usr/sbin/networksetup -setairportpower en0 off");
 		if(startcheck())
 			return 1;
         } 
@@ -57,6 +59,6 @@ int startcheck(void) {
 int endcheck(void) {	
 	// char *killcommand = "kill $(pgrep -f checkon)";
 	// pgrep -f finds name of script and kill will end it
-	system("kill $(pgrep -f checkon.sh)");
+	system("/bin/kill $(/usr/bin/pgrep -f checkon.sh)");
 	return 0;
 }
