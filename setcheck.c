@@ -11,7 +11,7 @@ int endcheck(void);
 // or turn off wifi (run script)
 int main(int argc, char *argv[]) {
         if (argc == 1) {
-                printf("Include argument 'wifion' or 'wifioff'\n");
+                // printf("Include argument 'wifion' or 'wifioff'\n");
                 return 1;
         }
 
@@ -33,7 +33,6 @@ int main(int argc, char *argv[]) {
 
 // Launch checkon script
 int startcheck(void) {
-	// char *checkon_path = "/Users/mimmyjau/Projects/wifi-scheduler/checkon";
 	char *checkon_path = "/Users/mimmyjau/Projects/wifi-scheduler/checkon";
 	char *checkon_arg0 = "checkon";
 
@@ -56,8 +55,9 @@ int startcheck(void) {
 
 // Find checkon script and kill it
 int endcheck(void) {	
-	char *killcommand = "kill $(pgrep -f '/bin/bash /Users/mimmyjau/Projects/wifi-scheduler/checkon')";
+	// char *killcommand = "kill $(pgrep -f checkon)";
 	// pgrep -f finds name of script and kill will end it
-	system(killcommand);
+	int sysret = system("kill $(pgrep -f checkon)");
+	printf("sysret: %d\n", sysret);
 	return 0;
 }

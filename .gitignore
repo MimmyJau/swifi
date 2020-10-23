@@ -1,1 +1,8 @@
+# Ignore c binary files
+*.out
+
+# Ignore vim swap files
 *.sw[a-z]
+
+# Ignore these files
+zzz_*
