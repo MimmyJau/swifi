@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/bin/bash
 
 # Name of Wi-Fi device is en0
 device=en0

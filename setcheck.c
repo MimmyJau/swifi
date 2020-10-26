@@ -3,6 +3,7 @@
 #include <string.h>	// For strcmp()
 #include <unistd.h>	// For fork()
 #include <errno.h>	// For errno
+#include <time.h>	// For time()
 
 int startcheck(void);
 int endcheck(void);
@@ -17,6 +18,11 @@ int main(int argc, char *argv[]) {
 
         // Turn off or on the checkon script
         if (!strcmp(argv[1], "wifion")) {
+		/*
+		time_t current_time = time(NULL);
+		char *c_time_string = ctime(&current_time);
+                printf("Turning on wifi: %s\n", c_time_string);
+		*/
                 printf("Turning on wifi\n");
 		// Run program that sends signal to checkon and shuts it down
 		if (endcheck())
