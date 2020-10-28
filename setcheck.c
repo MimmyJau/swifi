@@ -11,19 +11,19 @@ int endcheck(void);
 // Cron calls main(), telling it to either turn on wifi (normal state)
 // or turn off wifi (run script)
 int main(int argc, char *argv[]) {
+	time_t current_time;
+	char *c_time_string;
+	
         if (argc == 1) {
                 printf("Include argument 'wifion' or 'wifioff'\n");
                 return 1;
         }
 
-        // Turn off or on the checkon script
+        // Turn off or on the background script
         if (!strcmp(argv[1], "wifion")) {
-		/*
-		time_t current_time = time(NULL);
-		char *c_time_string = ctime(&current_time);
+		current_time = time(NULL);
+		c_time_string = ctime(&current_time);
                 printf("Turning on wifi: %s\n", c_time_string);
-		*/
-                printf("Turning on wifi\n");
 		// Run program that sends signal to checkon and shuts it down
 		if (endcheck())
 			return 1;
@@ -31,11 +31,17 @@ int main(int argc, char *argv[]) {
 		// than shell, meaning PATH variable is different
 		system("/usr/sbin/networksetup -setairportpower en0 on");
         } else if (!strcmp(argv[1], "wifioff")) {
-                printf("Turning off wifi\n");
+		current_time = time(NULL);
+		c_time_string = ctime(&current_time);
+                printf("Turning off wifi: %s\n", c_time_string);
 		system("/usr/sbin/networksetup -setairportpower en0 off");
 		if(startcheck())
 			return 1;
-        } 
+        } else {
+		current_time = time(NULL);
+		c_time_string = ctime(&current_time);
+                printf("Error: Argument must be 'wifion' or 'wifioff': %s\n", c_time_string);
+	}
         return 0;
 }
 
