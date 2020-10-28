@@ -7,13 +7,11 @@
 
 int startcheck(void);
 int endcheck(void);
+int pmessages(char *);
 
 // Cron calls main(), telling it to either turn on wifi (normal state)
 // or turn off wifi (run script)
 int main(int argc, char *argv[]) {
-	time_t current_time;
-	char *c_time_string;
-	
         if (argc == 1) {
                 printf("Include argument 'wifion' or 'wifioff'\n");
                 return 1;
@@ -21,26 +19,20 @@ int main(int argc, char *argv[]) {
 
         // Turn off or on the background script
         if (!strcmp(argv[1], "wifion")) {
-		current_time = time(NULL);
-		c_time_string = ctime(&current_time);
-                printf("Turning on wifi: %s\n", c_time_string);
 		// Run program that sends signal to checkon and shuts it down
 		if (endcheck())
 			return 1;
+		pmessages("Turning on wifi");
 		// Inclue full path b/c cron sets a different environment 
 		// than shell, meaning PATH variable is different
 		system("/usr/sbin/networksetup -setairportpower en0 on");
         } else if (!strcmp(argv[1], "wifioff")) {
-		current_time = time(NULL);
-		c_time_string = ctime(&current_time);
-                printf("Turning off wifi: %s\n", c_time_string);
+		pmessages("Turning off wifi"); 
 		system("/usr/sbin/networksetup -setairportpower en0 off");
 		if(startcheck())
 			return 1;
         } else {
-		current_time = time(NULL);
-		c_time_string = ctime(&current_time);
-                printf("Error: Argument must be 'wifion' or 'wifioff': %s\n", c_time_string);
+		pmessages("Error: Argument must be 'wifion' or 'wifioff': %s\n");
 	}
         return 0;
 }
@@ -49,6 +41,12 @@ int main(int argc, char *argv[]) {
 int startcheck(void) {
 	char *checkon_path = "/Users/mimmyjau/Projects/wifi-scheduler/checkon.sh";
 	char *checkon_arg0 = "checkon.sh";
+
+	// Check if checkon.sh already exists, if so, print error and exit
+	if(system("/usr/bin/pgrep -f checkon.sh >>/dev/null 2>>/dev/null") == 0) {
+		pmessages("Error: checkon.sh already exists");
+		exit(1);
+	}
 
 	// Fork creates a child process that is identical except it returns
 	// 0 for the child and the pid of the child for the parent process
@@ -69,8 +67,23 @@ int startcheck(void) {
 
 // Find checkon script and kill it
 int endcheck(void) {	
-	// char *killcommand = "kill $(pgrep -f checkon)";
 	// pgrep -f finds name of script and kill will end it
-	system("/bin/kill $(/usr/bin/pgrep -f checkon.sh)");
+	// Redirects output otherwise if checkon.sh doesn't exist, 
+	// command will print error to terminal
+	system("/bin/kill $(/usr/bin/pgrep -f checkon.sh) >>/dev/null 2>>/dev/null");
 	return 0;
+}
+
+// Print messages
+int pmessages(char *pmessage) {
+	time_t current_time = time(NULL);
+	char *c_time_string = ctime(&current_time);
+
+	if (pmessage != NULL) {
+		printf("%s: %s", pmessage, c_time_string);
+		return 0;
+	} else {
+		printf("pmessages error: no message: %s\n", c_time_string);
+		return 1;
+	}
 }
