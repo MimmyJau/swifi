@@ -1,5 +1,5 @@
 #include <stdio.h>	// For strerror()
-#include <stdlib.h>	// For exit()
+#include <stdlib.h>	// For exit() and system()
 #include <string.h>	// For strcmp()
 #include <unistd.h>	// For fork()
 #include <errno.h>	// For errno
