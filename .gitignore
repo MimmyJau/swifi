@@ -2,7 +2,7 @@
 *.out
 
 # Ignore vim swap files
-*.sw[a-z]
+# *.sw[a-z]
 
 # Ignore these files
 log.txt
