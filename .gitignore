@@ -1,9 +1,10 @@
 # Ignore c binary files
-# *.out
+*.out
 
 # Ignore vim swap files
 *.sw[a-z]
 
 # Ignore these files
 log.txt
+vlinux
 zzz_*
