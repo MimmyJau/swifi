@@ -1,4 +1,4 @@
-#include <stdio.h>
+#include <stdio.h>	// For printf()
 #include <stdlib.h>	// For system()
 #include <string.h>	// For strcmp()
 #include <inttypes.h>	// For strtol()
@@ -15,42 +15,26 @@ int rmvcron(struct hourmin *starttime, struct hourmin *endtime);
 int clearcron(void);
 int gethourmin(char *, struct hourmin *);
 
-// Takes 3 arguments: 1) on or off, 2) start time and 3) end time
-// Arguments 2) and 3) are conditional on arguments 1) and 2) respectively
+// Takes 3 arguments: 1) add or rmv, 2) start time (-s) and 3) end time (-e)
 int main(int argc, char *argv[]) {
-	// int start_time = 0;
-	// int end_time = 0;
-	int ch;
-	int addflag, rmvflag, allflag, startflag, endflag;
-	struct hourmin starttime = { 0 , 0 };
+	int ch;		// getopt man page uses "ch"
+	int addflag, rmvflag;
+	addflag = rmvflag = 0;
+	struct hourmin starttime = { 1 , 0 }; // Default: Be on the whole day
 	struct hourmin endtime = { 0 , 0 };
-	addflag = rmvflag = allflag = startflag = endflag = 0;
 
-	// NTD: Not sure what to do with this block
-	// Set start_time and/or end_time 
-	switch (argc) {
-	case 1:
+	if (argc == 1) {
+		printf("Error: Provide at least one argument 'add' or 'rmv'\n");
 		return 1;
-	case 2:
-		break;
-	case 3:
-		// start_time = (int) strtol(argv[2], NULL, 10);
-		break;
-	case 4:
-		// start_time = (int) strtol(argv[2], NULL, 10);
-		// end_time = (int) strtol(argv[3], NULL, 10);
-		break;
 	}
 
 	while (optind < argc) {
 		if ((ch = getopt(argc, argv, "s:e:")) != -1) {
 			switch (ch) {
 			case 's':
-				startflag = 1;
 				gethourmin(optarg, &starttime);
 				break;
 			case 'e':
-				endflag = 1;
 				gethourmin(optarg, &endtime);
 				break;
 			default:
@@ -63,52 +47,50 @@ int main(int argc, char *argv[]) {
 			rmvflag = 1;
 			optind++;
 		} else if (!strcmp(argv[optind], "clear")) {
-			// Write function that removes all cronjobs 
-			// and turns on wifi
 			clearcron();
 			optind++;
-		} else if (!strcmp(argv[optind], "list")) {
-			return 0;
 		} else {
-			printf("optind: %d, argv: %s\n", optind, argv[optind]);
 			printf("Error: Unrecognized argument.\n");
 			return 1;
 		}
 	}
 
+	// NTD: Any reason not to put this code up in previous block?
 	if (addflag) {
 		addcron(&starttime, &endtime);
 		printf("Wifi set to turn off at %d:%02d\n", starttime.hour, starttime.minute);
 		printf("Wifi set to turn on at %d:%02d\n", endtime.hour, endtime.minute);
 	} else if (rmvflag) {
 		rmvcron(&starttime, &endtime);
+		// function to check if any cronjobs left
+		// if not, restart wifi
 		printf("Timer removed. Start: %d:%02d End: %d:%02d\n", starttime.hour, starttime.minute, endtime.hour, endtime.minute);
 	} 
 
 	return 0;
 }
 
-// Function for creating cronjob
+// Adds cronjob to crontab
 int addcron(struct hourmin *start_time, struct hourmin *end_time) {
 	char cron_wifioff[1000];
 	char cron_wifion[1000];
 
-	// Is there a cleaner way of preparing these commands?
-	sprintf(cron_wifioff, "(crontab -l ; echo '%d %d * * * /Users/mimmyjau/Projects/wifi-scheduler/setcheck.out wifioff >>/dev/null 2>>/dev/null') | sort - | uniq - | crontab -", start_time->minute, start_time->hour);
-	sprintf(cron_wifion, "(crontab -l ; echo '%d %d * * * /Users/mimmyjau/Projects/wifi-scheduler/setcheck.out wifion >>/dev/null 2>>/dev/null') | sort - | uniq - | crontab -", end_time->minute, end_time->hour);
+	// NTD: Is there a cleaner way of preparing these commands?
+	sprintf(cron_wifioff, "(crontab -l 2>/dev/null; echo '%d %d * * * /Users/mimmyjau/Projects/wifi-scheduler/setcheck.out wifioff >>/dev/null 2>>/dev/null') | sort - | uniq - | crontab -", start_time->minute, start_time->hour);
+	sprintf(cron_wifion, "(crontab -l 2>/dev/null; echo '%d %d * * * /Users/mimmyjau/Projects/wifi-scheduler/setcheck.out wifion >>/dev/null 2>>/dev/null') | sort - | uniq - | crontab -", end_time->minute, end_time->hour);
 
 	system(cron_wifioff);
 	system(cron_wifion);
 	return 0;
 }
 
-// Function for removing crons related to ./a.out wifioff
+// Removes cronjobs from crontab
 int rmvcron(struct hourmin *start_time, struct hourmin *end_time) {
-	// rcron for remove cron
+	// rcron stands for remove cron
 	char rcron_wifioff[1000];
 	char rcron_wifion[1000];
 
-	// Is there a cleaner way of preparing these commands?
+	// NTD: Is there a cleaner way of preparing these commands?
 	sprintf(rcron_wifioff, "(crontab -l | sort - | uniq - | grep -v '%d %d \\* \\* \\* /Users/mimmyjau/Projects/wifi-scheduler/setcheck.out wifioff >>/dev/null 2>>/dev/null') | crontab -", start_time->minute, start_time->hour);
 	sprintf(rcron_wifion, "(crontab -l | sort - | uniq - | grep -v '%d %d \\* \\* \\* /Users/mimmyjau/Projects/wifi-scheduler/setcheck.out wifion >>/dev/null 2>>/dev/null') | crontab -", end_time->minute, end_time->hour);
 
@@ -117,15 +99,15 @@ int rmvcron(struct hourmin *start_time, struct hourmin *end_time) {
 	return 0;
 }
 
+// Clears crontab and restarts wifi
 int clearcron(void) {
 	system("crontab -r");
 	system("/Users/mimmyjau/Projects/wifi-scheduler/setcheck.out wifion >>/dev/null 2>>/dev/null");
 	return 0;
 }
 
-// Function converts string with 'HHMM' format into struct hourmin with 
-// members int minute and int hour 
-int gethourmin(char *strtime, struct hourmin *strhourmin) {
+// Converts string with 'HHMM' format into struct hourmin 
+int gethourmin(char *strtime, struct hourmin *hmtime) {
 	// Arrays are size 3 because HH and MM can be at most 2 digits + '\0'
 	char hour[3] = { '0', '\0', '\0' };
 	char minute[3] = { '0', '\0', '\0' }; 
@@ -151,8 +133,8 @@ int gethourmin(char *strtime, struct hourmin *strhourmin) {
 		exit(1);
 	}
 
-	strhourmin->hour = (int) strtol(hour, NULL, 10);
-	strhourmin->minute = (int) strtol(minute, NULL, 10);
+	hmtime->hour = (int) strtol(hour, NULL, 10);
+	hmtime->minute = (int) strtol(minute, NULL, 10);
 
 	// Checks that mins and hours are legal values. First errno occurs if
 	// either strtol() above fail (if str can't be converted to number).
@@ -161,11 +143,11 @@ int gethourmin(char *strtime, struct hourmin *strhourmin) {
 		printf("errno: %s\n", strerror(errno));
 		exit(1);
 	}
-	if (strhourmin->hour > 23 || strhourmin->hour < 0) {
+	if (hmtime->hour > 23 || hmtime->hour < 0) {
 		printf("Error: Bad time argument. Hour must be between 0-23.\n");
 		exit(1);
 	} 
-	if (strhourmin->minute > 59 || strhourmin->minute <0) {
+	if (hmtime->minute > 59 || hmtime->minute <0) {
 		printf("Error: Bad time argument. Minute must be between 0-59.\n");
 		exit(1);
 	}
