@@ -5,13 +5,13 @@ device=en0
 
 # Check status of wi-fi device (is it active or inactive?)
 status() {
-        ifconfig $device | awk '/status:/{print $2}'
+        /sbin/ifconfig $device | awk '/status:/{print $2}'
 }
 
 # If wifi is on, turn off after X seconds
 isactive() {
         sleep 10
-        networksetup -setairportpower $device off
+        /usr/sbin/networksetup -setairportpower $device off
 }
 
 # Every 5 seconds, check if wifi is active or inactive
