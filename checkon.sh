@@ -1,22 +1,38 @@
 #!/bin/bash
 
-# Name of Wi-Fi device is en0
-device=en0
+# Check OS
+if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+	# If wifi on ubuntu, keyword is UP
+	wifion=UP
+elif [[ "$OSTYPE" == "darwin"* ]]; then
+	# Name of Wi-Fi device is en0
+	device=en0
+	# If wifi on on osx, keyword is active
+	wifion=active
+fi
 
 # Check status of wi-fi device (is it active or inactive?)
 status() {
-        /sbin/ifconfig $device | awk '/status:/{print $2}'
+	if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+		ip l show enp0s3 | awk '/state/{print $9}'
+	elif [[ "$OSTYPE" == "darwin"* ]]; then
+		/sbin/ifconfig $device | awk '/status:/{print $2}'
+	fi
 }
 
 # If wifi is on, turn off after X seconds
 isactive() {
-        sleep 10
-        /usr/sbin/networksetup -setairportpower $device off
+        sleep 1
+	if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+		nmcli networking off
+	elif [[ "$OSTYPE" == "darwin"* ]]; then
+		/usr/sbin/networksetup -setairportpower $device off
+	fi
 }
 
 # Every 5 seconds, check if wifi is active or inactive
 while :; do
-        if [ $(status) == active ]
+        if [[ "$(status)" == "$wifion" ]]
         then isactive
         fi
         sleep 5
