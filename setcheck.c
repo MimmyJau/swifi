@@ -5,9 +5,18 @@
 #include <errno.h>	// For errno
 #include <time.h>	// For time()
 
+// Determine os
+#if __APPLE__
+	#define PLATFORM_NAME "apple"
+#elif __linux__
+	#define PLATFORM_NAME "linux"
+#endif
+
 int startcheck(void);
 int endcheck(void);
-int pmessages(char *);
+int pmessages(char *message);
+int turnonwifi(void);
+int turnoffwifi(void);
 
 // Cron calls main(), telling it to either turn on wifi (normal state)
 // or turn off wifi (run script)
@@ -19,16 +28,14 @@ int main(int argc, char *argv[]) {
 
         // Turn off or on the background script
         if (!strcmp(argv[1], "wifion")) {
-		// Run program that sends signal to checkon and shuts it down
+		pmessages("Turning on wifi");
+		turnonwifi();
+		// Run program shuts down checkon script
 		if (endcheck())
 			return 1;
-		pmessages("Turning on wifi");
-		// Inclue full path b/c cron sets a different environment 
-		// than shell, meaning PATH variable is different
-		system("/usr/sbin/networksetup -setairportpower en0 on");
         } else if (!strcmp(argv[1], "wifioff")) {
 		pmessages("Turning off wifi"); 
-		system("/usr/sbin/networksetup -setairportpower en0 off");
+		turnoffwifi();
 		if(startcheck())
 			return 1;
         } else {
@@ -39,7 +46,11 @@ int main(int argc, char *argv[]) {
 
 // Launch checkon script
 int startcheck(void) {
-	char *checkon_path = "/Users/mimmyjau/Projects/wifi-scheduler/checkon.sh";
+	char cwd[1000];
+	getcwd(cwd, 1000);
+
+	char *checkon_path2 = "/checkon.sh";
+	char *checkon_path = strcat(cwd, checkon_path2);
 	char *checkon_arg0 = "checkon.sh";
 
 	// Check if checkon.sh already exists, if so, print error and exit
@@ -86,4 +97,28 @@ int pmessages(char *pmessage) {
 		printf("pmessages error: no message: %s\n", c_time_string);
 		return 1;
 	}
+}
+
+// Turn on wifi
+int turnonwifi() {
+	// Inclue full path b/c cron sets a different environment 
+	// than shell, meaning PATH variable is different
+	if (!strcmp(PLATFORM_NAME, "apple")) {
+		system("/usr/sbin/networksetup -setairportpower en0 on");
+	} else if (!strcmp(PLATFORM_NAME, "linux")) {
+		system("nmcli networking on");
+	}
+	return 0;
+}
+
+// Turn off wifi
+int turnoffwifi() {
+	// Inclue full path b/c cron sets a different environment 
+	// than shell, meaning PATH variable is different
+	if (!strcmp(PLATFORM_NAME, "apple")) {
+		system("/usr/sbin/networksetup -setairportpower en0 off");
+	} else if (!strcmp(PLATFORM_NAME, "linux")) {
+		system("nmcli networking off");
+	}
+	return 0;
 }
