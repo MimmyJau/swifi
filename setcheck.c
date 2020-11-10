@@ -12,6 +12,14 @@
 	#define PLATFORM_NAME "linux"
 #endif
 
+#define MAXLINE 1000
+
+// 1) If I don't assign macro to a variable, compiler will warn that code
+// strcmp(PLATFORM_NAME, "apple") will result in unreachable code. 
+// Need to determine condition at run-time vs compile-time.
+// 2) Need `static` to avoid -Wmissing-variable-declaration warning
+static char os[MAXLINE];
+
 int startcheck(void);
 int endcheck(void);
 int pmessages(char *message);
@@ -21,6 +29,7 @@ int turnoffwifi(void);
 // Cron calls main(), telling it to either turn on wifi (normal state)
 // or turn off wifi (run script)
 int main(int argc, char *argv[]) {
+	strcpy(os, PLATFORM_NAME);
         if (argc == 1) {
                 printf("Include argument 'wifion' or 'wifioff'\n");
                 return 1;
@@ -46,15 +55,26 @@ int main(int argc, char *argv[]) {
 
 // Launch checkon script
 int startcheck(void) {
-	char cwd[1000];
-	getcwd(cwd, 1000);
+	char cwd[MAXLINE];
+	getcwd(cwd, MAXLINE);
 
 	char *checkon_path2 = "/checkon.sh";
 	char *checkon_path = strcat(cwd, checkon_path2);
 	char *checkon_arg0 = "checkon.sh";
 
 	// Check if checkon.sh already exists, if so, print error and exit
-	if(system("/usr/bin/pgrep -f checkon.sh >>/dev/null 2>>/dev/null") == 0) {
+	// Need to use '-f' and include '.sh' in search for osx
+	int isrunning = 1;
+	if (!strcmp(os, "apple")) {
+		isrunning = system("/usr/bin/pgrep -f checkon.sh >>/dev/null 2>>/dev/null");
+	} else if (!strcmp(os, "linux")) {
+		// NTD: Why does system() return 0 when '-f' is used in
+		// ubuntu when process doesn't exist?
+		isrunning = system("/usr/bin/pgrep checkon >>/dev/null 2>>/dev/null");
+	} else {
+		printf("Warning: cannot determine if checkon.sh is running\n");
+	}
+	if(isrunning == 0) {
 		pmessages("Error: checkon.sh already exists");
 		exit(1);
 	}
@@ -81,7 +101,11 @@ int endcheck(void) {
 	// pgrep -f finds name of script and kill will end it
 	// Redirects output otherwise if checkon.sh doesn't exist, 
 	// command will print error to terminal
-	system("/bin/kill $(/usr/bin/pgrep -f checkon.sh) >>/dev/null 2>>/dev/null");
+	if (!strcmp(os, "apple")) {
+		system("/bin/kill $(/usr/bin/pgrep -f checkon.sh) >>/dev/null 2>>/dev/null");
+	} else if (!strcmp(os, "linux")) {
+		system("/usr/bin/pkill checkon >>/dev/null 2>>/dev/null");
+	}
 	return 0;
 }
 
@@ -103,9 +127,9 @@ int pmessages(char *pmessage) {
 int turnonwifi() {
 	// Inclue full path b/c cron sets a different environment 
 	// than shell, meaning PATH variable is different
-	if (!strcmp(PLATFORM_NAME, "apple")) {
+	if (!strcmp(os, "apple")) {
 		system("/usr/sbin/networksetup -setairportpower en0 on");
-	} else if (!strcmp(PLATFORM_NAME, "linux")) {
+	} else if (!strcmp(os, "linux")) {
 		system("nmcli networking on");
 	}
 	return 0;
@@ -115,9 +139,9 @@ int turnonwifi() {
 int turnoffwifi() {
 	// Inclue full path b/c cron sets a different environment 
 	// than shell, meaning PATH variable is different
-	if (!strcmp(PLATFORM_NAME, "apple")) {
+	if (!strcmp(os, "apple")) {
 		system("/usr/sbin/networksetup -setairportpower en0 off");
-	} else if (!strcmp(PLATFORM_NAME, "linux")) {
+	} else if (!strcmp(os, "linux")) {
 		system("nmcli networking off");
 	}
 	return 0;
