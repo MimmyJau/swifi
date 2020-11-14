@@ -6,40 +6,101 @@
 #include <errno.h>	// For errno
 #include <time.h>	// For time(), ctime(), etc.
 
+// Determine os
+#if __APPLE__
+	#define PLATFORM_NAME "apple"
+#elif __linux__
+	#define PLATFORM_NAME "linux"
+#endif
 #define MAXLINE 1000
 
 struct hourmin {
 	int minute;
 	int hour;
 };
+
 // Need static keyword to avoid -Wmissing-variable-declaration warning
 static char cwd[MAXLINE];
+static char os[MAXLINE];
+static int addflag, rmvflag;
+static struct hourmin starttime = { 1, 0 };
+static struct hourmin endtime = { 1, 0 };
 
+void getarg(int argc, char **argv);
 int addcron(struct hourmin *starttime, struct hourmin *endtime);
 int rmvcron(struct hourmin *starttime, struct hourmin *endtime);
 int clearcron(void);
 int turnoffwifi(void);
 int turnonwifi(void);
-int gethourmin(char *, struct hourmin *);
-int istimebetween(struct hourmin *starttime, struct hourmin *endtime);
+int gethourmin(char *strtime, struct hourmin *);
+int istimebetween(void);
 
 // Takes 3 arguments: 1) add or rmv, 2) start time (-s) and 3) end time (-e)
 int main(int argc, char *argv[]) {
-	int ch;		// getopt man page uses "ch"
-	int addflag, rmvflag;
-	addflag = rmvflag = 0;
 	// Default: Be on the whole day
-	struct hourmin starttime = { 1 , 0 };
-	struct hourmin endtime = { 0 , 0 };
 	getcwd(cwd, MAXLINE);
+	strcpy(os, PLATFORM_NAME);
 
 	if (argc == 1) {
 		printf("Error: Provide at least one argument 'add' or 'rmv'\n");
 		return 1;
 	}
 
-	while (optind < argc) {
-		if ((ch = getopt(argc, argv, "s:e:")) != -1) {
+	getarg(argc, argv);
+	printf("addflag: %d\n", addflag);
+
+	// NTD: Any reason not to put this code up in previous block?
+	if (addflag) {
+		addcron(&starttime, &endtime);
+		if(istimebetween())
+			turnoffwifi();
+		printf("Wifi set to turn off at %d:%02d\n", starttime.hour, starttime.minute);
+		printf("Wifi set to turn on at %d:%02d\n", endtime.hour, endtime.minute);
+	} else if (rmvflag) {
+		rmvcron(&starttime, &endtime);
+		if(istimebetween())
+			turnonwifi();
+		printf("Timer removed. Start: %d:%02d End: %d:%02d\n", starttime.hour, starttime.minute, endtime.hour, endtime.minute);
+	} 
+
+	return 0;
+}
+
+// Parse arguments using getopt(). Need a separate function 
+// to handle GNU / Linux case and OSX / BSD case.
+void getarg(int argc, char **argv) {
+	int ch;		// getopt man page uses "ch"
+	addflag = rmvflag = 0;
+
+	if (!strcmp(os, "apple")) {
+		while (optind < argc) {
+			if ((ch = getopt(argc, argv, "s:e:")) != -1) {
+				switch (ch) {
+				case 's':
+					gethourmin(optarg, &starttime);
+					break;
+				case 'e':
+					gethourmin(optarg, &endtime);
+					break;
+				default:
+					break;
+				}
+			} else if (!strcmp(argv[optind], "add")) {
+				addflag = 1;
+				optind++;
+			} else if (!strcmp(argv[optind], "rmv")) {
+				rmvflag = 1;
+				optind++;
+			} else if (!strcmp(argv[optind], "clear")) {
+				clearcron();
+				optind++;
+			} else {
+				printf("Error: Unrecognized argument.\n");
+				exit(1);
+			}
+		}
+	} else if (!strcmp(os, "linux")) {
+		while ((ch = getopt(argc, argv, "s:e:")) != -1) {
 			switch (ch) {
 			case 's':
 				gethourmin(optarg, &starttime);
@@ -50,36 +111,22 @@ int main(int argc, char *argv[]) {
 			default:
 				break;
 			}
-		} else if (!strcmp(argv[optind], "add")) {
-			addflag = 1;
-			optind++;
-		} else if (!strcmp(argv[optind], "rmv")) {
-			rmvflag = 1;
-			optind++;
-		} else if (!strcmp(argv[optind], "clear")) {
-			clearcron();
-			optind++;
-		} else {
-			printf("Error: Unrecognized argument.\n");
-			return 1;
 		}
+		int index;
+		for (index = optind; index < argc; index++) {
+			if (!strcmp(argv[optind], "add")) {
+				addflag = 1;
+			} else if (!strcmp(argv[optind], "rmv")) {
+				rmvflag = 1;
+			} else if (!strcmp(argv[optind], "clear")) {
+				clearcron();
+			} else {
+				printf("Error: Unrecognized argument.\n");
+				exit(1);
+			}
+		}
+
 	}
-
-	// NTD: Any reason not to put this code up in previous block?
-	if (addflag) {
-		addcron(&starttime, &endtime);
-		if(istimebetween(&starttime, &endtime))
-			turnoffwifi();
-		printf("Wifi set to turn off at %d:%02d\n", starttime.hour, starttime.minute);
-		printf("Wifi set to turn on at %d:%02d\n", endtime.hour, endtime.minute);
-	} else if (rmvflag) {
-		rmvcron(&starttime, &endtime);
-		if(istimebetween(&starttime, &endtime))
-			turnonwifi();
-		printf("Timer removed. Start: %d:%02d End: %d:%02d\n", starttime.hour, starttime.minute, endtime.hour, endtime.minute);
-	} 
-
-	return 0;
 }
 
 // Adds cronjob to crontab
@@ -134,7 +181,7 @@ int turnonwifi(void) {
 
 // Get current time and compare if it is in between
 // NTD: Not sure what to do if starttime = endtime. cronjob race condition?
-int istimebetween(struct hourmin *starttime, struct hourmin *endtime) {
+int istimebetween(void) {
 	// Get current time into int format (tm struc that contains int members) 
 	time_t current_time = time(NULL);
 	struct tm *current_tm = localtime(&current_time);
@@ -142,10 +189,10 @@ int istimebetween(struct hourmin *starttime, struct hourmin *endtime) {
 	// Rename for ease
 	int chour = current_tm->tm_hour;
 	int cmin = current_tm->tm_min;
-	int shour = starttime->hour;
-	int smin = starttime->minute;
-	int ehour = endtime->hour;
-	int emin = endtime->minute;
+	int shour = starttime.hour;
+	int smin = starttime.minute;
+	int ehour = endtime.hour;
+	int emin = endtime.minute;
 
 	// If endtime > starttime, check if current time is in between
 	// If endtime < starttime, check if current time is NOT in between
