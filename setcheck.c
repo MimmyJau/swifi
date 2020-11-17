@@ -6,20 +6,7 @@
 #include <errno.h>	// For errno
 #include <time.h>	// For time()
 
-// Determine os
-#if __APPLE__
-	#define PLATFORM_NAME "apple"
-#elif __linux__
-	#define PLATFORM_NAME "linux"
-#endif
-
 #define MAXLINE 1000
-
-// 1) If I don't assign macro to a variable, compiler will warn that code
-// strcmp(PLATFORM_NAME, "apple") will result in unreachable code. 
-// Need to determine condition at run-time vs compile-time.
-// 2) Need `static` to avoid -Wmissing-variable-declaration warning
-static char os[MAXLINE];
 
 int startcheck(void);
 int endcheck(void);
@@ -30,7 +17,6 @@ int turnoffwifi(void);
 // Cron calls main(), telling it to either turn on wifi (normal state)
 // or turn off wifi (run script)
 int main(int argc, char *argv[]) {
-	strcpy(os, PLATFORM_NAME);
         if (argc == 1) {
                 printf("Include argument 'wifion' or 'wifioff'\n");
                 return 1;
@@ -65,13 +51,13 @@ int startcheck(void) {
 
 	// Check if checkon.sh already exists, by checking for pid_sh.txt file
 	// that script creates, and if it exists, print error and exit
-	int isrunning = 1;
+	int shrunning = 1;
 	char fpath[MAXLINE];
 	getcwd(fpath, MAXLINE);
 	strcat(fpath, "/pid_sh.txt");
 	// F_OK checks if file exists and returns 0 if true
-	isrunning = access(fpath, F_OK);
-	if(isrunning == 0) {
+	shrunning = access(fpath, F_OK);
+	if(shrunning == 0) {
 		pmessages("Error: checkon.sh already exists");
 		exit(1);
 	}
@@ -131,26 +117,29 @@ int pmessages(char *pmessage) {
 	}
 }
 
-// Turn on wifi
+// Used #if __APPLE__ preprocessor directive to determine OS
 int turnonwifi() {
 	// Include full path b/c cron sets a different environment 
 	// than shell, meaning PATH variable is different
-	if (!strcmp(os, "apple")) {
+	#if __APPLE__
 		system("/usr/sbin/networksetup -setairportpower en0 on");
-	} else if (!strcmp(os, "linux")) {
+	#elif __linux__
 		system("nmcli networking on");
-	}
+	#else
+	#error This platform not yet supported
+	#endif
 	return 0;
 }
 
-// Turn off wifi
 int turnoffwifi() {
 	// Include full path b/c cron sets a different environment 
 	// than shell, meaning PATH variable is different
-	if (!strcmp(os, "apple")) {
+	#if __APPLE__
 		system("/usr/sbin/networksetup -setairportpower en0 off");
-	} else if (!strcmp(os, "linux")) {
+	#elif __linux__
 		system("nmcli networking off");
-	}
+	#else
+	#error This platform not yet supported
+	#endif
 	return 0;
 }

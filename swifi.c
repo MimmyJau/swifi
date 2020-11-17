@@ -6,12 +6,6 @@
 #include <errno.h>	// For errno
 #include <time.h>	// For time(), ctime(), etc.
 
-// Determine os
-#if __APPLE__
-	#define PLATFORM_NAME "apple"
-#elif __linux__
-	#define PLATFORM_NAME "linux"
-#endif
 #define MAXLINE 1000
 
 struct hourmin {
@@ -21,7 +15,6 @@ struct hourmin {
 
 // Need static keyword to avoid -Wmissing-variable-declaration warning
 static char cwd[MAXLINE];
-static char os[MAXLINE];
 static int addflag, rmvflag;
 // Default: Be on the whole day
 static struct hourmin starttime = { 1, 0 };
@@ -33,13 +26,12 @@ int rmvcron(struct hourmin *starttime, struct hourmin *endtime);
 int clearcron(void);
 int turnoffwifi(void);
 int turnonwifi(void);
-int gethourmin(char *strtime, struct hourmin *);
-int istimebetween(void);
+int gethourmin(char *timeasstr, struct hourmin *);
+int timebetween(void);
 
 // Takes 3 arguments: 1) add or rmv, 2) start time (-s) and 3) end time (-e)
 int main(int argc, char *argv[]) {
 	getcwd(cwd, MAXLINE);
-	strcpy(os, PLATFORM_NAME);
 
 	if (argc == 1) {
 		printf("Error: Provide at least one argument 'add' or 'rmv'\n");
@@ -50,13 +42,13 @@ int main(int argc, char *argv[]) {
 
 	if (addflag) {
 		addcron(&starttime, &endtime);
-		if(istimebetween())
+		if(timebetween())
 			turnoffwifi();
 		printf("Wifi set to turn off at %d:%02d\n", starttime.hour, starttime.minute);
 		printf("Wifi set to turn on at %d:%02d\n", endtime.hour, endtime.minute);
 	} else if (rmvflag) {
 		rmvcron(&starttime, &endtime);
-		if(istimebetween())
+		if(timebetween())
 			turnonwifi();
 		printf("Timer removed. Start: %d:%02d End: %d:%02d\n", starttime.hour, starttime.minute, endtime.hour, endtime.minute);
 	} 
@@ -70,7 +62,8 @@ void getarg(int argc, char **argv) {
 	int ch;		// getopt man page uses "ch"
 	addflag = rmvflag = 0;
 
-	if (!strcmp(os, "apple")) {
+	// Determine os
+	#if __APPLE__
 		while (optind < argc) {
 			if ((ch = getopt(argc, argv, "s:e:")) != -1) {
 				switch (ch) {
@@ -97,7 +90,8 @@ void getarg(int argc, char **argv) {
 				exit(1);
 			}
 		}
-	} else if (!strcmp(os, "linux")) {
+
+	#elif __linux__
 		while ((ch = getopt(argc, argv, "s:e:")) != -1) {
 			switch (ch) {
 			case 's':
@@ -123,8 +117,9 @@ void getarg(int argc, char **argv) {
 				exit(1);
 			}
 		}
-
-	}
+	#else
+	#error This platform not yet supported
+	#endif
 }
 
 // Adds cronjob to crontab
@@ -137,6 +132,26 @@ int addcron(struct hourmin *start_time, struct hourmin *end_time) {
 	sprintf(cron_wifion, "(crontab -l 2>>/dev/null; echo '%d %d * * * %s/setcheck.out wifion >>/dev/null 2>>/dev/null') | sort - | uniq - | crontab -", end_time->minute, end_time->hour, cwd);
 
 	system(cron_wifioff);
+// Turn off wifi
+// Turn off wifi
+// Turn off wifi
+// Turn off wifi
+// Turn off wifi
+// Turn off wifi
+// Turn off wifi
+// Turn off wifi
+// Turn off wifi
+// Turn off wifi
+// Turn off wifi
+// Turn off wifi
+// Turn off wifi
+// Turn off wifi
+// Turn off wifi
+// Turn off wifi
+// Turn off wifi
+// Turn off wifi
+// Turn off wifi
+// Turn off wifi
 	system(cron_wifion);
 	return 0;
 }
@@ -179,7 +194,7 @@ int turnonwifi(void) {
 
 // Get current time and compare if it is in between
 // NTD: Not sure what to do if starttime = endtime. cronjob race condition?
-int istimebetween(void) {
+int timebetween(void) {
 	// Get current time into int format (tm struc that contains int members) 
 	time_t current_time = time(NULL);
 	struct tm *current_tm = localtime(&current_time);
@@ -199,7 +214,7 @@ int istimebetween(void) {
 		checkbetween = 1;
 
 	// Compare current time to starttime and endtime
-	int isbetween = 0;
+	int tisbetween = 0;
 	switch (checkbetween) {
 	case 0:
 		// In case 0, endtime is "earlier" than starttime, so 
@@ -213,7 +228,7 @@ int istimebetween(void) {
 			|| (chour == shour && cmin < smin && chour > ehour)
 			|| (chour == ehour && chour == shour 
 				&& cmin > emin && cmin < smin))
-			isbetween = 1;
+			tisbetween = 1;
 		break;
 	case 1:
 		// In case 1, end time is "later" than starttime, so
@@ -223,34 +238,34 @@ int istimebetween(void) {
 			|| (chour == ehour && cmin < emin && chour > shour)
 			|| (chour == shour && chour == ehour 
 				&& cmin > smin && cmin < emin))
-			isbetween = 1;
+			tisbetween = 1;
 		break;
 	}
 
-	return (checkbetween == isbetween);
+	return (checkbetween == tisbetween);
 }
 
 // Converts string with 'HHMM' format into struct hourmin 
-int gethourmin(char *strtime, struct hourmin *hmtime) {
+int gethourmin(char *timeasstr, struct hourmin *hmtime) {
 	// Arrays are size 3 because HH and MM can be at most 2 digits + '\0'
 	char hour[3] = { '0', '\0', '\0' };
 	char minute[3] = { '0', '\0', '\0' }; 
 
 	// Takes 'HHMM' string and separates into minutes and hours strings
-	switch (strlen(strtime)) {
+	switch (strlen(timeasstr)) {
 	case 1: case 2:
-		strcpy(hour, strtime);
+		strcpy(hour, timeasstr);
 		break;
 	case 3:
-		hour[0] = *strtime++;
+		hour[0] = *timeasstr++;
 		hour[1] = '\0';
-		strcpy(minute, strtime);
+		strcpy(minute, timeasstr);
 		break;
 	case 4:
-		hour[0] = *strtime++;
-		hour[1] = *strtime++;
+		hour[0] = *timeasstr++;
+		hour[1] = *timeasstr++;
 		hour[2] = '\0';
-		strcpy(minute, strtime);
+		strcpy(minute, timeasstr);
 		break;
 	default:
 		printf("Error: Bad time arguments. Must be of the form H, HH, HMM, or HHMM.\n");
