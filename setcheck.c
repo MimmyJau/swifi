@@ -1,7 +1,8 @@
 #include <stdio.h>	// For strerror()
 #include <stdlib.h>	// For exit() and system()
 #include <string.h>	// For strcmp()
-#include <unistd.h>	// For fork(), getcwd()
+#include <unistd.h>	// For fork(), getcwd(), access()
+#include <signal.h>	// For kill()
 #include <errno.h>	// For errno
 #include <time.h>	// For time()
 
@@ -62,18 +63,14 @@ int startcheck(void) {
 	char *checkon_path = strcat(cwd, checkon_path2);
 	char *checkon_arg0 = "checkon.sh";
 
-	// Check if checkon.sh already exists, if so, print error and exit
-	// Need to use '-f' and include '.sh' in search for osx
+	// Check if checkon.sh already exists, by checking for pid_sh.txt file
+	// that script creates, and if it exists, print error and exit
 	int isrunning = 1;
-	if (!strcmp(os, "apple")) {
-		isrunning = system("/usr/bin/pgrep -f checkon.sh >>/dev/null 2>>/dev/null");
-	} else if (!strcmp(os, "linux")) {
-		// NTD: Why does system() return 0 when '-f' is used in
-		// ubuntu when process doesn't exist?
-		isrunning = system("/usr/bin/pgrep checkon >>/dev/null 2>>/dev/null");
-	} else {
-		printf("Warning: cannot determine if checkon.sh is running\n");
-	}
+	char fpath[MAXLINE];
+	getcwd(fpath, MAXLINE);
+	strcat(fpath, "/pid_sh.txt");
+	// F_OK checks if file exists and returns 0 if true
+	isrunning = access(fpath, F_OK);
 	if(isrunning == 0) {
 		pmessages("Error: checkon.sh already exists");
 		exit(1);
@@ -98,13 +95,24 @@ int startcheck(void) {
 
 // Find checkon script and kill it
 int endcheck(void) {	
-	// pgrep -f finds name of script and kill will end it.
-	// Redirect output otherwise if checkon.sh doesn't exist, 
-	// command will print error to terminal
-	if (!strcmp(os, "apple")) {
-		system("/bin/kill $(/usr/bin/pgrep -f checkon.sh) >>/dev/null 2>>/dev/null");
-	} else if (!strcmp(os, "linux")) {
-		system("/usr/bin/pkill checkon >>/dev/null 2>>/dev/null");
+	// 1) Get pathname to file with PID of shell script
+	char fpath[MAXLINE];
+	getcwd(fpath, MAXLINE);
+	strcat(fpath, "/pid_sh.txt");
+	// 2) Open text file with PID and read number
+	FILE *fpid = fopen(fpath, "r");
+	if (fpid == NULL) {
+		pmessages("Error: checkon.sh not running");
+		exit(1);
+	}
+	int pid_sh;
+	fscanf(fpid, "%d", &pid_sh);
+	fclose(fpid);
+	// 3) Kill shell script using PID
+	int killret = kill(pid_sh, SIGTERM);
+	if (killret != 0) {
+		pmessages("Error: Could not send kill signal to checkon.sh");
+		exit(1);
 	}
 	return 0;
 }

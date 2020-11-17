@@ -1,5 +1,16 @@
 #!/bin/bash
 
+# Set up signal handler that deletes tmp file when script exits
+cleanup() {
+	rm $PWD/pid_sh.txt
+}
+trap cleanup EXIT
+
+# Get PID of process and place into file
+# NTD: Doesn't work if binaries and / or scripts move to another directory,
+# should pick a location that's based on the operating system
+echo $$ > $PWD/pid_sh.txt
+
 # Check OS
 if [[ "$OSTYPE" == "linux-gnu"* ]]; then
 	# If wifi on for ubuntu, keyword is UP
@@ -22,7 +33,7 @@ status() {
 
 # If wifi is on, turn off after X seconds
 isactive() {
-        sleep 30
+        sleep 1
 	if [[ "$OSTYPE" == "linux-gnu"* ]]; then
 		nmcli networking off
 	elif [[ "$OSTYPE" == "darwin"* ]]; then
