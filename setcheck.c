@@ -98,8 +98,8 @@ int startcheck(void) {
 
 // Find checkon script and kill it
 int endcheck(void) {	
-	// pgrep -f finds name of script and kill will end it
-	// Redirects output otherwise if checkon.sh doesn't exist, 
+	// pgrep -f finds name of script and kill will end it.
+	// Redirect output otherwise if checkon.sh doesn't exist, 
 	// command will print error to terminal
 	if (!strcmp(os, "apple")) {
 		system("/bin/kill $(/usr/bin/pgrep -f checkon.sh) >>/dev/null 2>>/dev/null");
@@ -125,7 +125,7 @@ int pmessages(char *pmessage) {
 
 // Turn on wifi
 int turnonwifi() {
-	// Inclue full path b/c cron sets a different environment 
+	// Include full path b/c cron sets a different environment 
 	// than shell, meaning PATH variable is different
 	if (!strcmp(os, "apple")) {
 		system("/usr/sbin/networksetup -setairportpower en0 on");
@@ -137,7 +137,7 @@ int turnonwifi() {
 
 // Turn off wifi
 int turnoffwifi() {
-	// Inclue full path b/c cron sets a different environment 
+	// Include full path b/c cron sets a different environment 
 	// than shell, meaning PATH variable is different
 	if (!strcmp(os, "apple")) {
 		system("/usr/sbin/networksetup -setairportpower en0 off");

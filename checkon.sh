@@ -2,12 +2,12 @@
 
 # Check OS
 if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-	# If wifi on ubuntu, keyword is UP
+	# If wifi on for ubuntu, keyword is UP
 	wifion=UP
 elif [[ "$OSTYPE" == "darwin"* ]]; then
 	# Name of Wi-Fi device is en0
 	device=en0
-	# If wifi on on osx, keyword is active
+	# If wifi on for osx, keyword is active
 	wifion=active
 fi
 
@@ -22,7 +22,7 @@ status() {
 
 # If wifi is on, turn off after X seconds
 isactive() {
-        sleep 1
+        sleep 30
 	if [[ "$OSTYPE" == "linux-gnu"* ]]; then
 		nmcli networking off
 	elif [[ "$OSTYPE" == "darwin"* ]]; then

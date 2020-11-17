@@ -23,8 +23,9 @@ struct hourmin {
 static char cwd[MAXLINE];
 static char os[MAXLINE];
 static int addflag, rmvflag;
+// Default: Be on the whole day
 static struct hourmin starttime = { 1, 0 };
-static struct hourmin endtime = { 1, 0 };
+static struct hourmin endtime = { 0, 0 };
 
 void getarg(int argc, char **argv);
 int addcron(struct hourmin *starttime, struct hourmin *endtime);
@@ -37,7 +38,6 @@ int istimebetween(void);
 
 // Takes 3 arguments: 1) add or rmv, 2) start time (-s) and 3) end time (-e)
 int main(int argc, char *argv[]) {
-	// Default: Be on the whole day
 	getcwd(cwd, MAXLINE);
 	strcpy(os, PLATFORM_NAME);
 
@@ -47,9 +47,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	getarg(argc, argv);
-	printf("addflag: %d\n", addflag);
 
-	// NTD: Any reason not to put this code up in previous block?
 	if (addflag) {
 		addcron(&starttime, &endtime);
 		if(istimebetween())
