@@ -11,40 +11,49 @@ trap cleanup EXIT
 # should pick a location that's based on the operating system
 echo $$ > $PWD/pid_sh.txt
 
-# Check OS
-if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+# If wifi is on, turn off after tsleep seconds
+tsleep=1
+
+case "$(uname -s)" in
+Linux)
 	# If wifi on for ubuntu, keyword is UP
 	wifion=UP
-elif [[ "$OSTYPE" == "darwin"* ]]; then
+	# Check status of wi-fi device (is it active or inactive?)
+	status() {
+		ip l show enp0s3 | awk '/state/{print $9}'
+	}
+	isactive() {
+		sleep tsleep
+		nmcli networking off
+	}
+	# Main loop of script
+	while :; do
+		if [ "$(status)" == "$wifion" ]
+		then isactive
+		fi
+		sleep 5
+	done
+;;
+
+Darwin)
 	# Name of Wi-Fi device is en0
 	device=en0
 	# If wifi on for osx, keyword is active
 	wifion=active
-fi
-
-# Check status of wi-fi device (is it active or inactive?)
-status() {
-	if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-		ip l show enp0s3 | awk '/state/{print $9}'
-	elif [[ "$OSTYPE" == "darwin"* ]]; then
+	# Check status of wi-fi device (is it active or inactive?)
+	status() {
 		/sbin/ifconfig $device | awk '/status:/{print $2}'
-	fi
-}
-
-# If wifi is on, turn off after X seconds
-isactive() {
-        sleep 1
-	if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-		nmcli networking off
-	elif [[ "$OSTYPE" == "darwin"* ]]; then
+	}
+	isactive() {
+		sleep tsleep 
 		/usr/sbin/networksetup -setairportpower $device off
-	fi
-}
-
-# Every 5 seconds, check if wifi is active or inactive
-while :; do
-        if [[ "$(status)" == "$wifion" ]]
-        then isactive
-        fi
-        sleep 5
-done
+	}
+	# Main loop of script
+	while :; do
+		if [ "$(status)" == "$wifion" ]
+		then isactive
+		fi
+		sleep 5
+	done
+;;
+esac
