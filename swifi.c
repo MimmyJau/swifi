@@ -1,5 +1,5 @@
 #include <stdio.h>	// For printf()
-#include <stdlib.h>	// For system()
+#include <stdlib.h>	// For system() and EXIT_FAILURE
 #include <string.h>	// For strcmp()
 #include <inttypes.h>	// For strtol()
 #include <unistd.h>	// For getopt() and getcwd()
@@ -34,8 +34,8 @@ int main(int argc, char *argv[]) {
 	getcwd(cwd, MAXLINE);
 
 	if (argc == 1) {
-		printf("Error: Provide at least one argument 'add' or 'rmv'\n");
-		return 1;
+		fprintf(stderr, "Error: Provide argument 'add' or 'rmv'\n");
+		return EXIT_FAILURE;
 	}
 
 	getarg(argc, argv);
@@ -86,8 +86,8 @@ void getarg(int argc, char **argv) {
 				clearcron();
 				optind++;
 			} else {
-				printf("Error: Unrecognized argument.\n");
-				exit(1);
+				fprintf(stderr, "Error: Unrecognized argument.\n");
+				exit(EXIT_FAILURE);
 			}
 		}
 
@@ -113,8 +113,8 @@ void getarg(int argc, char **argv) {
 			} else if (!strcmp(argv[optind], "clear")) {
 				clearcron();
 			} else {
-				printf("Error: Unrecognized argument.\n");
-				exit(1);
+				fprintf(stderr, "Error: Unrecognized argument.\n");
+				exit(EXIT_FAILURE);
 			}
 		}
 	#else
@@ -268,8 +268,8 @@ int gethourmin(char *timeasstr, struct hourmin *hmtime) {
 		strcpy(minute, timeasstr);
 		break;
 	default:
-		printf("Error: Bad time arguments. Must be of the form H, HH, HMM, or HHMM.\n");
-		exit(1);
+		fprintf(stderr, "Error: Bad time arguments. Must be of the form H, HH, HMM, or HHMM.\n");
+		exit(EXIT_FAILURE);
 	}
 
 	hmtime->hour = (int) strtol(hour, NULL, 10);
@@ -278,17 +278,17 @@ int gethourmin(char *timeasstr, struct hourmin *hmtime) {
 	// Checks that mins and hours are legal values. First errno occurs if
 	// either strtol() above fail (if str can't be converted to number).
 	if (errno) {
-		printf("Error: Bad time argument. Must provide a number.\n");
-		printf("errno: %s\n", strerror(errno));
-		exit(1);
+		fprintf(stderr, "Error: Bad time. Must provide a number.\n");
+		fprintf(stderr, "errno: %s\n", strerror(errno));
+		exit(EXIT_FAILURE);
 	}
 	if (hmtime->hour > 23 || hmtime->hour < 0) {
-		printf("Error: Bad time argument. Hour must be between 0-23.\n");
-		exit(1);
+		fprintf(stderr, "Error: Bad time. Hour must be between 0-23.\n");
+		exit(EXIT_FAILURE);
 	} 
 	if (hmtime->minute > 59 || hmtime->minute <0) {
-		printf("Error: Bad time argument. Minute must be between 0-59.\n");
-		exit(1);
+		fprintf(stderr, "Error: Bad time. Minute must be between 0-59.\n");
+		exit(EXIT_FAILURE);
 	}
 
 	return 0;
