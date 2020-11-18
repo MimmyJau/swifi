@@ -15,7 +15,7 @@ $ make all
 ```
 $ ./swifi.out add -s <start_time> -e <end_time>
 ```
-where `<start_time>` and `<end_time>` are in the form `HHMM`. Wifi will shut off at `<start_time>` and turn back on again at `<end_time>`. 
+where `<start_time>` and `<end_time>` are integers in the form `HHMM`. Wifi will shut off at `<start_time>` and turn back on again at `<end_time>`. 
 
 ### To remove "wifi off" time
 ```
