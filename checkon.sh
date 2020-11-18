@@ -12,7 +12,7 @@ trap cleanup EXIT
 echo $$ > $PWD/pid_sh.txt
 
 # If wifi is on, turn off after tsleep seconds
-tsleep=1
+tsleep=30
 
 case "$(uname -s)" in
 Linux)
