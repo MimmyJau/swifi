@@ -4,7 +4,7 @@
 
 Minimal wifi scheduler that's been tested on macOSX (Catalina 10.15.7) and Lubuntu (Ubuntu 18.04.5 LTS). 
 
-Set times when wifi turns off automatically. During these times, wifi can be turned on manually, but script will shut it off after X seconds grace period (default is 30). 
+Set times when wifi turns off automatically. During these times, wifi can be turned on manually, but script will shut it off after grace period of X seconds (default is 30). 
 
 ### To build
 ```
