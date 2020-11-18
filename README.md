@@ -1,3 +1,5 @@
+# wifi-scheduler
+
 ![lisa procrastinating](https://i.pinimg.com/originals/6d/07/0d/6d070de76132768479562d36b08f6be8.png)
 
 Minimal wifi scheduler that's been tested on macOSX (Catalina 10.15.7) and Lubuntu (Ubuntu 18.04.5 LTS). 
