@@ -1,4 +1,4 @@
-# wifi-scheduler
+# swifi: wifi scheduler
 
 ![lisa procrastinating](https://i.pinimg.com/originals/6d/07/0d/6d070de76132768479562d36b08f6be8.png)
 
