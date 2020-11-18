@@ -1,5 +1,19 @@
+.POSIX:
+
+UNAME := $(shell uname)
+ifeq ($(UNAME),Darwin)
+	CC = cc
+	CFLAGS = -Weverything -Wno-poison-system-directories -Werror
+endif
+ifeq ($(UNAME),Linux)
+	CC = cc
+	CFLAGS = -Wall -Wextra -pedantic -Werror
+endif
+
 all: swifi.out setcheck.out
 swifi.out: swifi.c
-	cc -Weverything -Wno-poison-system-directories -Werror swifi.c -o swifi.out
+	$(CC) $(CFLAGS) swifi.c -o swifi.out
 setcheck.out: setcheck.c
-	cc -Weverything -Wno-poison-system-directories -Werror setcheck.c -o setcheck.out
+	$(CC) $(CFLAGS) setcheck.c -o setcheck.out
+clean: 
+	rm swifi.out setcheck.out
